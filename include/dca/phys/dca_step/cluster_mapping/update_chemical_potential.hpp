@@ -245,11 +245,16 @@ double update_chemical_potential<parameters_type, MOMS_type, coarsegraining_type
   result = 0.0;
   compute_density_correction(result);
   double result_total = 0.0;
-  for (int i = 0; i < nu::dmn_size(); i++) {
-    result(i) += 1. - MOMS.G_r_t(i, i, RClusterDmn::parameter_type::origin_index(), 0);
-    MOMS.orbital_occupancy(i) = result(i);
-    result_total += result(i);
-  }
+  // If adjust_band_density(true), density=(density of particular band), otherwise, density is averaged over all bands.
+    if (parameters.adjust_band_density()) {
+      result_total = MOMS.orbital_occupancy(parameters.get_band_used_for_density(), 0) + MOMS.orbital_occupancy(parameters.get_band_used_for_density(), 1);
+    } else {
+        for (int i = 0; i < nu::dmn_size(); i++) {
+         result(i) += 1. - MOMS.G_r_t(i, i, RClusterDmn::parameter_type::origin_index(), 0);
+         MOMS.orbital_occupancy(i) = result(i);
+         result_total += result(i);
+         }
+    }
   return result_total;
 }
 
