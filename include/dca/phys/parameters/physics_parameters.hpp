@@ -24,7 +24,7 @@ namespace params {
 class PhysicsParameters {
 public:
   PhysicsParameters()
-      : beta_(1.), density_(1.), chemical_potential_(0.), adjust_chemical_potential_(true) {}
+      : beta_(1.), density_(1.), chemical_potential_(0.), adjust_chemical_potential_(true), adjust_band_density_(true), band_used_for_density_(0) {}
 
   template <typename Concurrency>
   int getBufferSize(const Concurrency& concurrency) const;
@@ -50,12 +50,20 @@ public:
   bool adjust_chemical_potential() const {
     return adjust_chemical_potential_;
   }
-
+  bool adjust_band_density() const {
+    return adjust_band_density_;
+  }
+  int get_band_used_for_density() const {
+    return band_used_for_density_;
+  }
+  
 private:
   double beta_;
   double density_;
   double chemical_potential_;
   bool adjust_chemical_potential_;
+  bool adjust_band_density_;
+  int band_used_for_density_;
 };
 
 template <typename Concurrency>
@@ -66,7 +74,9 @@ int PhysicsParameters::getBufferSize(const Concurrency& concurrency) const {
   buffer_size += concurrency.get_buffer_size(density_);
   buffer_size += concurrency.get_buffer_size(chemical_potential_);
   buffer_size += concurrency.get_buffer_size(adjust_chemical_potential_);
-
+  buffer_size += concurrency.get_buffer_size(adjust_band_density_);
+  buffer_size += concurrency.get_buffer_size(band_used_for_density_);
+  
   return buffer_size;
 }
 
@@ -77,6 +87,8 @@ void PhysicsParameters::pack(const Concurrency& concurrency, char* buffer, int b
   concurrency.pack(buffer, buffer_size, position, density_);
   concurrency.pack(buffer, buffer_size, position, chemical_potential_);
   concurrency.pack(buffer, buffer_size, position, adjust_chemical_potential_);
+  concurrency.pack(buffer, buffer_size, position, adjust_band_density_);
+  concurrency.pack(buffer, buffer_size, position, band_used_for_density_);
 }
 
 template <typename Concurrency>
@@ -86,6 +98,8 @@ void PhysicsParameters::unpack(const Concurrency& concurrency, char* buffer, int
   concurrency.unpack(buffer, buffer_size, position, density_);
   concurrency.unpack(buffer, buffer_size, position, chemical_potential_);
   concurrency.unpack(buffer, buffer_size, position, adjust_chemical_potential_);
+  concurrency.unpack(buffer, buffer_size, position, adjust_band_density_);
+  concurrency.unpack(buffer, buffer_size, position, band_used_for_density_);
 }
 template <typename ReaderOrWriter>
 void PhysicsParameters::readWrite(ReaderOrWriter& reader_or_writer) {
@@ -112,6 +126,16 @@ void PhysicsParameters::readWrite(ReaderOrWriter& reader_or_writer) {
     }
     catch (const std::exception& r_e) {
     }
+    try {
+      reader_or_writer.execute("adjust-band-density", adjust_band_density_);
+    }
+    catch (const std::exception& r_e) {
+    }
+    try {
+      reader_or_writer.execute("band-used-for-density", band_used_for_density_);
+    }
+    catch (const std::exception& r_e) {
+    }    
 
     reader_or_writer.close_group();
   }
